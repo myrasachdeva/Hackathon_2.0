@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { wordBank } from '../data/words.js';
 
 export default class GameScene extends Phaser.Scene {
