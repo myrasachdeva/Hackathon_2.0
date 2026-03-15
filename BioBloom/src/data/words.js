@@ -1,0 +1,66 @@
+export const wordBank = {
+  1: [
+    { word: "CAT", question: "This fluffy pet says meow and loves to nap in the sun.", hint: "You might find this animal sitting on a warm windowsill." },
+    { word: "DOG", question: "This loyal pet wags its tail and loves to play fetch.", hint: "This animal is often trained to do tricks and loves walks." },
+    { word: "SUN", question: "It rises every morning and gives us light and warmth.", hint: "Look up on a clear day and you will see it shining brightly." },
+    { word: "BEE", question: "This small flying insect makes something sweet in a hive.", hint: "You will hear a buzzing sound when this insect flies past." },
+    { word: "ANT", question: "This tiny insect lives in large groups underground.", hint: "You might spot a long line of these insects carrying food." },
+    { word: "COW", question: "This farm animal gives us milk and says moo.", hint: "Farmers keep this animal in a field where it grazes on grass." },
+    { word: "HEN", question: "This female bird lives on a farm and lays eggs.", hint: "Every morning this bird leaves something in its nest for us." },
+    { word: "PIG", question: "This pink farm animal loves to roll in mud.", hint: "This animal keeps cool by rolling in something messy." },
+    { word: "FOX", question: "This clever wild animal has orange fur and a bushy tail.", hint: "This animal is known for being sneaky and outwitting others." },
+    { word: "OWL", question: "This bird is awake at night and is known for being wise.", hint: "You would hear this bird making sounds after dark in the forest." },
+  ],
+
+  2: [
+    { word: "FROG", question: "This green animal starts life in water and later jumps on land.", hint: "As a baby it has a tail and no legs but that changes completely." },
+    { word: "CRAB", question: "This sea creature moves sideways and has two strong claws.", hint: "You might spot this animal on a rocky beach near the ocean." },
+    { word: "SWAN", question: "This elegant white bird glides gracefully on calm lakes.", hint: "This large white bird is famous for its long graceful neck." },
+    { word: "BEAR", question: "This large furry animal sleeps through the entire winter.", hint: "This powerful animal spends months doing absolutely nothing." },
+    { word: "WOLF", question: "This wild animal howls at the moon and lives in a pack.", hint: "This animal works together with others in a group to hunt." },
+    { word: "DUCK", question: "This bird swims on ponds and makes a quacking sound.", hint: "This bird can both swim and fly and loves to be near water." },
+    { word: "DEER", question: "This gentle forest animal has long slender legs and the males grow antlers.", hint: "The males of this animal grow a branching structure on their head." },
+    { word: "SEED", question: "Every plant begins its life as this tiny object placed in soil.", hint: "If you give this tiny thing water and sunlight something will grow." },
+    { word: "LEAF", question: "This flat green part of a plant catches sunlight to produce food.", hint: "In autumn these change colour and fall from certain trees." },
+    { word: "RAIN", question: "Water droplets fall from clouds down to the ground as this.", hint: "You would need an umbrella when this falls from the sky." },
+  ],
+
+  3: [
+    { word: "ORBIT", question: "This is the curved path a planet follows around the Sun.", hint: "The Earth takes exactly one year to complete this path." },
+    { word: "VAPOR", question: "When liquid water is heated enough it turns into this invisible gas.", hint: "You can see this rising above a boiling kettle as steam." },
+    { word: "SPINE", question: "This is the column of bones running down the centre of your back.", hint: "Without this you would not be able to stand upright at all." },
+    { word: "LUNAR", question: "This word describes anything that is related to the Moon.", hint: "A calendar based on the Moon's cycle uses this word." },
+    { word: "ALGAE", question: "These simple plant-like living things grow in water and produce oxygen.", hint: "These are the green slippery things you might see on wet rocks." },
+    { word: "FUNGI", question: "This group of living organisms includes mushrooms and mould.", hint: "You might see this growing on old bread or damp wood." },
+    { word: "LARVA", question: "This is the early worm-like stage of an insect just after it hatches.", hint: "A caterpillar is a well known example of this early life stage." },
+    { word: "PETAL", question: "This is the colourful part of a flower that attracts insects to it.", hint: "Flowers have several of these arranged around their centre." },
+    { word: "PRISM", question: "When light passes through this transparent object it splits into colours.", hint: "After rain you can see the same effect as a rainbow in the sky." },
+    { word: "GLAND", question: "This is an organ in the body that produces and releases important chemicals.", hint: "Your body has many of these that release substances you need." },
+  ],
+
+  4: [
+    { word: "EROSION", question: "This is the slow process where rock and soil are gradually worn away.", hint: "Rivers and wind both cause this to happen to the landscape over time." },
+    { word: "MINERAL", question: "This is a naturally occurring solid substance found inside rock formations.", hint: "Salt, diamond and quartz are all well known examples of this." },
+    { word: "NUCLEUS", question: "This is the control centre found at the very core of a living cell.", hint: "It holds the instructions that tell the cell what to do." },
+    { word: "PROTEIN", question: "This important nutrient found in food is essential for building muscles.", hint: "Athletes eat a lot of this nutrient to help their muscles repair." },
+    { word: "CIRCUIT", question: "Electricity flows around this closed loop in order to power devices.", hint: "If any part of this loop is broken the power will not flow." },
+    { word: "CLIMATE", question: "This describes the typical long-term weather patterns of a region.", hint: "It tells you what the weather in a place is usually like over many years." },
+    { word: "FERTILE", question: "This word describes land or soil that is rich and ideal for growing crops.", hint: "Farmers prefer this type of soil because plants grow well in it." },
+    { word: "GRAVITY", question: "This invisible force pulls all objects with mass toward one another.", hint: "This force is why things always fall downward when you drop them." },
+    { word: "HABITAT", question: "This is the natural environment where a specific plant or animal lives.", hint: "Each living thing is specially suited to survive in its own one." },
+    { word: "CURRENT", question: "This is a steady flow of water or electricity moving in one direction.", hint: "These flow through the ocean carrying warm or cold water around Earth." },
+  ],
+
+  5: [
+    { word: "ECOSYSTEM", question: "This is a system where all living things interact with each other and their surroundings.", hint: "A coral reef and a rainforest are both very complex versions of this." },
+    { word: "ATMOSPHERE", question: "This is the protective layer of gases that surrounds our planet.", hint: "It shields the Earth from harmful radiation coming from space." },
+    { word: "EVAPORATION", question: "This is the process where a liquid slowly converts into a gas.", hint: "Puddles disappear after a sunny day because of this process." },
+    { word: "HIBERNATION", question: "This is the deep prolonged sleep that some animals use to survive winter.", hint: "Some animals do this for months and barely move or eat at all." },
+    { word: "RESPIRATION", question: "This is the biological process cells use to release energy from food.", hint: "Every living cell in your body does this all the time to stay alive." },
+    { word: "CIRCULATION", question: "This is the continuous movement of blood around the body via the heart.", hint: "Your heart works as a pump to keep this process going non-stop." },
+    { word: "ADAPTATION", question: "This is a feature that helps a living thing survive in its environment.", hint: "A fish having gills instead of lungs is a classic example of this." },
+    { word: "COMBUSTION", question: "This is the chemical reaction in which a substance burns and releases energy.", hint: "A campfire and a car engine both involve this type of reaction." },
+    { word: "POLLINATION", question: "This is the transfer of pollen from one flower to another to help plants reproduce.", hint: "Without insects doing this for flowers, many plants could not reproduce." },
+    { word: "PHOTOSYNTHESIS", question: "This is the process plants use to convert sunlight into food for themselves.", hint: "Plants do this using their green parts, sunlight, water, and air." },
+  ]
+};
