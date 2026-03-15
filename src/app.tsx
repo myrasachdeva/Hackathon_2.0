@@ -195,7 +195,7 @@ const Sidebar = ({
 };
 
 // --- Login Page ---
-const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
+const LoginPage = ({ onLogin, reducedMotion }: { onLogin: () => void, reducedMotion: boolean }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [username, setUsername] = useState('');
   const [studentCode, setStudentCode] = useState('');
@@ -234,7 +234,7 @@ const LoginPage = ({ onLogin }: { onLogin: () => void }) => {
       <div className="absolute bottom-20 left-20 w-16 h-16 bg-[#FFD700]/50 rounded-full" />
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md relative z-10"
@@ -344,6 +344,11 @@ export default function App() {
   const [insightView, setInsightView] = useState<'leaderboard' | 'progress'>('progress');
   const [activeGameUrl, setActiveGameUrl] = useState<string | null>(null);
 
+  // --- Accessibility States ---
+  const [highContrast, setHighContrast] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [largeText, setLargeText] = useState(false);
+
   // --- Browser Back Navigation Fix ---
   useEffect(() => {
     const handlePopState = () => {
@@ -400,12 +405,12 @@ export default function App() {
   }
 
   if (!isLoggedIn) {
-    return <LoginPage onLogin={() => setPostLoginLoading(true)} />;
+    return <LoginPage onLogin={() => setPostLoginLoading(true)} reducedMotion={reducedMotion} />;
   }
 
   return (
     /* 1. Root wrapper remains black/dark */
-    <div className="min-h-screen bg-[#4B0082] font-mono text-white flex flex-col lg:flex-row overflow-x-hidden">
+    <div className={`min-h-screen bg-[#4B0082] font-mono text-white flex flex-col lg:flex-row overflow-x-hidden ${highContrast ? 'contrast-125 saturate-150' : ''} ${largeText ? 'text-lg' : ''}`}>
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} currentPage={currentPage} onNavigate={setCurrentPage} />
 
       {/* 2. Main content area centered on big screens */}
@@ -487,7 +492,7 @@ export default function App() {
           `}</style>
 
           <div aria-hidden="true" className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
-            {tetrisBlocks.map((block) => (
+            {!reducedMotion && tetrisBlocks.map((block) => (
               <svg
                 key={block.id}
                 className="tetris-block"
@@ -670,21 +675,21 @@ export default function App() {
                           desc={"Arithmetic-Action Challenge\n\nSector: Alpha-1\nSkill: Rapid Calculation"}
                           img="/images/Math-ninja.jpeg"
                           difficulty="HARD"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon2.0/math-ninja.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/hackathon_2.0/src/math-ninja.html')}
                         />
                         <GameCard 
                           title="Flappy Bird" 
                           desc={"Eco-Reflex Challenge\n\nSector: Beta-3\nSkill: Biology Basics"}
                           img="/images/flappy-bird.png"
                           difficulty="EASY"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon2.0/game.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/game.html')}
                         />
                         <GameCard 
                           title="Bio Bloom" 
                           desc={"Genetic-Strategy Challenge\n\nSector: Gamma-2\nSkill: Natural Sciences"}
                           img="/images/bio-bloom.png"
                           difficulty="MEDIUM"
-                          onPlay={() => setActiveGameUrl('https://example.com/bio-bloom')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/BioBloom/')}
                         />
                       </>
                     ) : selectedSubject === 'Science' ? (
@@ -694,14 +699,14 @@ export default function App() {
                           desc={"Eco-Reflex Challenge\n\nSector: Beta-3\nSkill: Biology Basics"}
                           img="/images/flappy-bird.png"
                           difficulty="EASY"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon2.0/game.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/game.html')}
                         />
                         <GameCard 
                           title="Bio Bloom" 
                           desc={"Genetic-Strategy Challenge\n\nSector: Gamma-2\nSkill: Natural Sciences"}
                           img="/images/bio-bloom.png"
                           difficulty="MEDIUM"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon2.0/bio-bloom.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/BioBloom/')}
                         />
                       </>
                     ) : (
@@ -711,14 +716,14 @@ export default function App() {
                           desc={"Arithmetic-Action Challenge\n\nSector: Alpha-1\nSkill: Rapid Calculation"}
                           img="/images/Math-ninja.jpeg"
                           difficulty="HARD"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon2.0/math-ninja.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/hackathon_2.0/src/math-ninja.html')}
                         />
                         <GameCard 
                           title="Cyber Run" 
                           desc={"Logic-Platformer Challenge\n\nSector: Delta-4\nSkill: Algorithm Logic"}
                           img="/images/cyber-run.png"
                           difficulty="MEDIUM"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon2.0/games/cyber dino/')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/games/cyber dino/')}
                         />
                       </>
                     )}
@@ -774,7 +779,40 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:col-span-2">
+                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
+                      <h3 className="text-[#FFD700] font-black font-mono text-[10px] uppercase tracking-widest mb-6 border-b border-white/5 pb-2">Accessibility Settings</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-mono font-bold text-xs uppercase">High Contrast</span>
+                          <button 
+                            onClick={() => setHighContrast(!highContrast)}
+                            className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${highContrast ? 'bg-[#FFD700]' : 'bg-white/20'}`}
+                          >
+                            <div className={`w-4 h-4 rounded-full bg-black transition-transform ${highContrast ? 'translate-x-4' : ''}`} />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-mono font-bold text-xs uppercase">Reduced Motion</span>
+                          <button 
+                            onClick={() => setReducedMotion(!reducedMotion)}
+                            className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${reducedMotion ? 'bg-[#FFD700]' : 'bg-white/20'}`}
+                          >
+                            <div className={`w-4 h-4 rounded-full bg-black transition-transform ${reducedMotion ? 'translate-x-4' : ''}`} />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-mono font-bold text-xs uppercase">Large Text</span>
+                          <button 
+                            onClick={() => setLargeText(!largeText)}
+                            className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${largeText ? 'bg-[#FFD700]' : 'bg-white/20'}`}
+                          >
+                            <div className={`w-4 h-4 rounded-full bg-black transition-transform ${largeText ? 'translate-x-4' : ''}`} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:col-span-1">
                       <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-2">
                         <h3 className="text-[#FFD700] font-black font-mono text-[10px] uppercase tracking-widest">Skill Matrix</h3>
                         <Trophy className="text-[#FFD700] w-4 h-4" />
