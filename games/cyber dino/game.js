@@ -357,7 +357,7 @@ function showTitleScreen() {
     overlay.fillRect(0, 0, 900, 400);
 
     // Glowing title
-    const titleGlow = this.add.text(450, 105, "CYBER DINO", {
+    const titleGlow = this.add.text(450, 105, "CYBER RUNNER", {
         fontFamily: "'Courier New', monospace",
         fontSize: "52px",
         color: "#00ffff",
