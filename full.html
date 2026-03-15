@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BioBloom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; font-family:'Nunito',sans-serif; background:#FFFACD; }
+    #game-container { position:relative; width:100%; height:100vh; }
+    canvas { position:absolute; top:0; left:0; width:100%!important; height:100%!important; z-index:0; }
+
+    #ui-layer {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:space-between; padding:24px 0 18px;
+      pointer-events:all; z-index:10;
+    }
+    .butterfly {
+      position:absolute; font-size:22px;
+      animation:flutter linear infinite;
+      pointer-events:none; z-index:5;
+    }
+    @keyframes flutter {
+      0%   { transform:translate(0,0) rotate(0deg) scale(1); opacity:0; }
+      10%  { opacity:1; }
+      50%  { transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(1.1); }
+      90%  { opacity:1; }
+      100% { transform:translate(var(--dx2),var(--dy2)) rotate(var(--rot2)) scale(0.9); opacity:0; }
+    }
+    .petal {
+      position:absolute; border-radius:50% 0 50% 0;
+      animation:petalFall linear infinite;
+      pointer-events:none; z-index:4; opacity:0.75;
+    }
+    @keyframes petalFall {
+      0%   { transform:translate(0,-20px) rotate(0deg); opacity:0; }
+      10%  { opacity:0.75; }
+      100% { transform:translate(var(--px),110vh) rotate(var(--pr)); opacity:0; }
+    }
+    .title-card {
+      background:rgba(241,248,233,0.88); border:2px solid #A5D6A7;
+      border-radius:18px; padding:16px 48px 12px; text-align:center;
+      box-shadow:0 4px 24px rgba(0,0,0,0.10); backdrop-filter:blur(4px);
+    }
+    .title-card h1 { font-size:46px; font-weight:800; color:#2E7D32; line-height:1.1; }
+    .title-card p  { font-size:16px; color:#558B2F; font-style:italic; margin-top:4px; }
+    .spacer { flex:1; }
+    .grade-section { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .grade-label { font-size:19px; font-weight:700; color:#33691E; font-style:italic; }
+    .grade-row { display:flex; gap:16px; align-items:center; justify-content:center; }
+    .grade-btn {
+      width:115px; height:60px; border-radius:14px; border:2.5px solid;
+      font-family:'Nunito',sans-serif; font-size:16px; font-weight:700;
+      cursor:pointer; transition:transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow:0 4px 0px rgba(0,0,0,0.13);
+    }
+    .grade-btn:hover  { transform:translateY(-4px); box-shadow:0 8px 0px rgba(0,0,0,0.12); }
+    .grade-btn:active { transform:translateY(0); box-shadow:0 2px 0px rgba(0,0,0,0.10); }
+    .btn-1 { background:rgba(200,230,201,0.9); border-color:#81C784; color:#1B5E20; }
+    .btn-2 { background:rgba(165,214,167,0.9); border-color:#66BB6A; color:#1B5E20; }
+    .btn-3 { background:rgba(129,199,132,0.9); border-color:#4CAF50; color:#1B5E20; }
+    .btn-4 { background:rgba(102,187,106,0.9); border-color:#388E3C; color:#fff; }
+    .btn-5 { background:rgba(76,175,80,0.9);   border-color:#2E7D32; color:#fff; }
+    .footer {
+      font-size:13px; color:#33691E; font-style:italic;
+      background:rgba(255,255,255,0.5); padding:4px 16px;
+      border-radius:20px; backdrop-filter:blur(2px);
+    }
+  </style>
+</head>
+<body>
+<div id="game-container">
+  <div id="ui-layer">
+    <div class="title-card">
+      <h1>🌸 BioBloom</h1>
+      <p>Can you bring it back to life?</p>
+    </div>
+    <div class="spacer"></div>
+    <div class="grade-section">
+      <div class="grade-label">— Select Your Grade —</div>
+      <div class="grade-row">
+        <button class="grade-btn btn-1" onclick="startGame(1)">Grade 1</button>
+        <button class="grade-btn btn-2" onclick="startGame(2)">Grade 2</button>
+        <button class="grade-btn btn-3" onclick="startGame(3)">Grade 3</button>
+        <button class="grade-btn btn-4" onclick="startGame(4)">Grade 4</button>
+        <button class="grade-btn btn-5" onclick="startGame(5)">Grade 5</button>
+      </div>
+    </div>
+    <div class="footer">🌿 Spell the answer letter by letter to revive the flower</div>
+  </div>
+</div>
+
+<script>
+// ─── Word Bank ───────────────────────────────────────────────────────────────
+const wordBank = {
+  1: [
+    { word:"CAT",  question:"This fluffy pet says meow and loves to nap in the sun.", hint:"You might find this animal sitting on a warm windowsill." },
+    { word:"DOG",  question:"This loyal pet wags its tail and loves to play fetch.", hint:"This animal is often trained to do tricks and loves walks." },
+    { word:"SUN",  question:"It rises every morning and gives us light and warmth.", hint:"Look up on a clear day and you will see it shining brightly." },
+    { word:"BEE",  question:"This small flying insect makes something sweet in a hive.", hint:"You will hear a buzzing sound when this insect flies past." },
+    { word:"ANT",  question:"This tiny insect lives in large groups underground.", hint:"You might spot a long line of these insects carrying food." },
+    { word:"COW",  question:"This farm animal gives us milk and says moo.", hint:"Farmers keep this animal in a field where it grazes on grass." },
+    { word:"HEN",  question:"This female bird lives on a farm and lays eggs.", hint:"Every morning this bird leaves something in its nest for us." },
+    { word:"PIG",  question:"This pink farm animal loves to roll in mud.", hint:"This animal keeps cool by rolling in something messy." },
+    { word:"FOX",  question:"This clever wild animal has orange fur and a bushy tail.", hint:"This animal is known for being sneaky and outwitting others." },
+    { word:"OWL",  question:"This bird is awake at night and is known for being wise.", hint:"You would hear this bird making sounds after dark in the forest." },
+  ],
+  2: [
+    { word:"FROG", question:"This green animal starts life in water and later jumps on land.", hint:"As a baby it has a tail and no legs but that changes completely." },
+    { word:"CRAB", question:"This sea creature moves sideways and has two strong claws.", hint:"You might spot this animal on a rocky beach near the ocean." },
+    { word:"SWAN", question:"This elegant white bird glides gracefully on calm lakes.", hint:"This large white bird is famous for its long graceful neck." },
+    { word:"BEAR", question:"This large furry animal sleeps through the entire winter.", hint:"This powerful animal spends months doing absolutely nothing." },
+    { word:"WOLF", question:"This wild animal howls at the moon and lives in a pack.", hint:"This animal works together with others in a group to hunt." },
+    { word:"DUCK", question:"This bird swims on ponds and makes a quacking sound.", hint:"This bird can both swim and fly and loves to be near water." },
+    { word:"DEER", question:"This gentle forest animal has long slender legs and the males grow antlers.", hint:"The males of this animal grow a branching structure on their head." },
+    { word:"SEED", question:"Every plant begins its life as this tiny object placed in soil.", hint:"If you give this tiny thing water and sunlight something will grow." },
+    { word:"LEAF", question:"This flat green part of a plant catches sunlight to produce food.", hint:"In autumn these change colour and fall from certain trees." },
+    { word:"RAIN", question:"Water droplets fall from clouds down to the ground as this.", hint:"You would need an umbrella when this falls from the sky." },
+  ],
+  3: [
+    { word:"ORBIT", question:"This is the curved path a planet follows around the Sun.", hint:"The Earth takes exactly one year to complete this path." },
+    { word:"VAPOR", question:"When liquid water is heated enough it turns into this invisible gas.", hint:"You can see this rising above a boiling kettle as steam." },
+    { word:"SPINE", question:"This is the column of bones running down the centre of your back.", hint:"Without this you would not be able to stand upright at all." },
+    { word:"LUNAR", question:"This word describes anything that is related to the Moon.", hint:"A calendar based on the Moon's cycle uses this word." },
+    { word:"ALGAE", question:"These simple plant-like living things grow in water and produce oxygen.", hint:"These are the green slippery things you might see on wet rocks." },
+    { word:"FUNGI", question:"This group of living organisms includes mushrooms and mould.", hint:"You might see this growing on old bread or damp wood." },
+    { word:"LARVA", question:"This is the early worm-like stage of an insect just after it hatches.", hint:"A caterpillar is a well known example of this early life stage." },
+    { word:"PETAL", question:"This is the colourful part of a flower that attracts insects to it.", hint:"Flowers have several of these arranged around their centre." },
+    { word:"PRISM", question:"When light passes through this transparent object it splits into colours.", hint:"After rain you can see the same effect as a rainbow in the sky." },
+    { word:"GLAND", question:"This is an organ in the body that produces and releases important chemicals.", hint:"Your body has many of these that release substances you need." },
+  ],
+  4: [
+    { word:"EROSION", question:"This is the slow process where rock and soil are gradually worn away.", hint:"Rivers and wind both cause this to happen to the landscape over time." },
+    { word:"MINERAL", question:"This is a naturally occurring solid substance found inside rock formations.", hint:"Salt, diamond and quartz are all well known examples of this." },
+    { word:"NUCLEUS", question:"This is the control centre found at the very core of a living cell.", hint:"It holds the instructions that tell the cell what to do." },
+    { word:"PROTEIN", question:"This important nutrient found in food is essential for building muscles.", hint:"Athletes eat a lot of this nutrient to help their muscles repair." },
+    { word:"CIRCUIT", question:"Electricity flows around this closed loop in order to power devices.", hint:"If any part of this loop is broken the power will not flow." },
+    { word:"CLIMATE", question:"This describes the typical long-term weather patterns of a region.", hint:"It tells you what the weather in a place is usually like over many years." },
+    { word:"FERTILE", question:"This word describes land or soil that is rich and ideal for growing crops.", hint:"Farmers prefer this type of soil because plants grow well in it." },
+    { word:"GRAVITY", question:"This invisible force pulls all objects with mass toward one another.", hint:"This force is why things always fall downward when you drop them." },
+    { word:"HABITAT", question:"This is the natural environment where a specific plant or animal lives.", hint:"Each living thing is specially suited to survive in its own one." },
+    { word:"CURRENT", question:"This is a steady flow of water or electricity moving in one direction.", hint:"These flow through the ocean carrying warm or cold water around Earth." },
+  ],
+  5: [
+    { word:"ECOSYSTEM",     question:"This is a system where all living things interact with each other and their surroundings.", hint:"A coral reef and a rainforest are both very complex versions of this." },
+    { word:"ATMOSPHERE",    question:"This is the protective layer of gases that surrounds our planet.", hint:"It shields the Earth from harmful radiation coming from space." },
+    { word:"EVAPORATION",   question:"This is the process where a liquid slowly converts into a gas.", hint:"Puddles disappear after a sunny day because of this process." },
+    { word:"HIBERNATION",   question:"This is the deep prolonged sleep that some animals use to survive winter.", hint:"Some animals do this for months and barely move or eat at all." },
+    { word:"RESPIRATION",   question:"This is the biological process cells use to release energy from food.", hint:"Every living cell in your body does this all the time to stay alive." },
+    { word:"CIRCULATION",   question:"This is the continuous movement of blood around the body via the heart.", hint:"Your heart works as a pump to keep this process going non-stop." },
+    { word:"ADAPTATION",    question:"This is a feature that helps a living thing survive in its environment.", hint:"A fish having gills instead of lungs is a classic example of this." },
+    { word:"COMBUSTION",    question:"This is the chemical reaction in which a substance burns and releases energy.", hint:"A campfire and a car engine both involve this type of reaction." },
+    { word:"POLLINATION",   question:"This is the transfer of pollen from one flower to another to help plants reproduce.", hint:"Without insects doing this for flowers, many plants could not reproduce." },
+    { word:"PHOTOSYNTHESIS",question:"This is the process plants use to convert sunlight into food for themselves.", hint:"Plants do this using their green parts, sunlight, water, and air." },
+  ]
+};
+
+// ─── Menu startGame ──────────────────────────────────────────────────────────
+function startGame(grade) {
+  document.getElementById('ui-layer').style.display = 'none';
+  window._startGrade = grade;
+  window._gradeSelected = true;
+}
+
+// ─── Floating butterflies ────────────────────────────────────────────────────
+const butterflies = ['🦋','🐝','🌼','🌸'];
+for (let i = 0; i < 7; i++) {
+  const el = document.createElement('div');
+  el.className = 'butterfly';
+  el.textContent = butterflies[i % butterflies.length];
+  const startX = Math.random() * 90;
+  const startY = Math.random() * 70 + 10;
+  const dx  = (Math.random()-0.5)*200, dy  = (Math.random()-0.5)*120;
+  const dx2 = dx+(Math.random()-0.5)*150, dy2 = dy+(Math.random()-0.5)*100;
+  const rot = (Math.random()-0.5)*40, rot2 = (Math.random()-0.5)*60;
+  el.style.cssText = `left:${startX}vw;top:${startY}vh;
+    --dx:${dx}px;--dy:${dy}px;--dx2:${dx2}px;--dy2:${dy2}px;
+    --rot:${rot}deg;--rot2:${rot2}deg;
+    animation-duration:${5+Math.random()*7}s;
+    animation-delay:${Math.random()*6}s;`;
+  document.getElementById('game-container').appendChild(el);
+}
+
+// ─── Falling petals ──────────────────────────────────────────────────────────
+const petalColors = ['#F48FB1','#FFD54F','#CE93D8','#EF9A9A','#FFCC80','#80CBC4'];
+for (let i = 0; i < 14; i++) {
+  const el = document.createElement('div');
+  el.className = 'petal';
+  el.style.cssText = `
+    left:${Math.random()*100}vw; top:${Math.random()*-20}vh;
+    background:${petalColors[i%petalColors.length]};
+    --px:${(Math.random()-0.5)*160}px; --pr:${Math.random()*720-360}deg;
+    animation-duration:${6+Math.random()*8}s;
+    animation-delay:${Math.random()*10}s;
+    width:${8+Math.random()*8}px; height:${10+Math.random()*8}px;`;
+  document.getElementById('game-container').appendChild(el);
+}
+</script>
+
+<script type="module">
+import Phaser from 'https://cdn.skypack.dev/phaser@3.60.0';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MENU SCENE
+// ═══════════════════════════════════════════════════════════════════════════
+class MenuScene extends Phaser.Scene {
+  constructor() { super('MenuScene'); }
+
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+    this.add.rectangle(W/2, H/2, W, H, 0xFFFACD);
+    this.add.rectangle(W/2, 0, W, 10, 0x81C784).setOrigin(0.5,0);
+    this.add.rectangle(W/2, H, W, 10, 0x81C784).setOrigin(0.5,1);
+    this.drawFlower(W/2, H/2);
+
+    this.time.addEvent({ delay:100, loop:true, callback:() => {
+      if (window._gradeSelected) {
+        window._gradeSelected = false;
+        const grade = window._startGrade;
+        this.cameras.main.fadeOut(400,0,0,0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('GameScene', { grade });
+        });
+      }
+    }});
+  }
+
+  drawFlower(x, y) {
+    const g = this.add.graphics();
+    const totalPetals = 8, centerRadius = 22, petalRadius = 20;
+    const petalDist = centerRadius + petalRadius;
+
+    // Stem
+    g.lineStyle(7, 0x388E3C, 1);
+    g.beginPath(); g.moveTo(x, y+centerRadius); g.lineTo(x, y+110); g.strokePath();
+
+    // Leaves
+    g.fillStyle(0x66BB6A, 1);
+    g.fillEllipse(x-28, y+68, 40, 16);
+    g.fillEllipse(x+28, y+88, 40, 16);
+
+    // Petals
+    for (let i = 0; i < totalPetals; i++) {
+      const angle = (i/totalPetals)*Math.PI*2 - Math.PI/2;
+      const px = x + Math.cos(angle)*petalDist;
+      const py = y + Math.sin(angle)*petalDist;
+      g.fillStyle(0xF48FB1, 1); g.fillCircle(px, py, petalRadius);
+      g.fillStyle(0xFF80AB, 1); g.fillCircle(px, py, petalRadius-3);
+      g.fillStyle(0xFFFFFF, 0.25); g.fillCircle(px-4, py-4, 5);
+    }
+
+    // Center
+    g.fillStyle(0xFFEE58, 0.5); g.fillCircle(x, y, centerRadius+7);
+    g.fillStyle(0xFFD600, 1);   g.fillCircle(x, y, centerRadius);
+    g.fillStyle(0xFFA000, 1);   g.fillCircle(x, y, 13);
+    g.fillStyle(0xFF6F00, 1);   g.fillCircle(x, y, 6);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GAME SCENE
+// ═══════════════════════════════════════════════════════════════════════════
+class GameScene extends Phaser.Scene {
+  constructor() { super('GameScene'); }
+
+  init(data) {
+    this.grade = data.grade || 1;
+    this.maxWrong = 8;
+    this.wrongCount = 0;
+    this.guessedLetters = [];
+    this.wordData = this.pickWord();
+    this.word = this.wordData.word.toUpperCase();
+    this.gameOver = false;
+    this.hintUsed = false;
+  }
+
+  pickWord() {
+    const list = wordBank[this.grade];
+    return list[Phaser.Math.Between(0, list.length-1)];
+  }
+
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+    this.bgRect = this.add.rectangle(W/2, H/2, W, H, 0xFFFACD);
+    this.add.rectangle(W/2, 0, W, 10, 0x81C784).setOrigin(0.5,0);
+    this.add.rectangle(W/2, H, W, 10, 0x81C784).setOrigin(0.5,1);
+    this.flowerGraphics = this.add.graphics();
+    this.flowerX = W/2;
+    this.flowerY = H*0.36;
+    this.drawFlower(this.flowerX, this.flowerY, 8);
+    this.createHTML();
+    this.cameras.main.fadeIn(500);
+  }
+
+  getBgHex(p) {
+    const c = ['#78909C','#AB47BC','#EF5350','#EF5350','#FFA726','#FFF176','#AED581','#C5E1A5','#FFFACD'];
+    return c[Math.max(0,Math.min(p,8))];
+  }
+
+  getPhaserBg(p) {
+    const c = [0x78909C,0xAB47BC,0xEF5350,0xEF5350,0xFFA726,0xFFF176,0xAED581,0xC5E1A5,0xFFFACD];
+    return c[Math.max(0,Math.min(p,8))];
+  }
+
+  drawFlower(x, y, petalsLeft) {
+    this.flowerGraphics.clear();
+    const g = this.flowerGraphics;
+    const totalPetals = 8, centerRadius = 22, petalRadius = 20;
+    const petalDist = centerRadius + petalRadius;
+
+    if (petalsLeft === 0) {
+      g.fillStyle(0xBDBDBD,1); g.fillCircle(x,y,centerRadius);
+      g.lineStyle(7,0xBDBDBD,1);
+      g.beginPath(); g.moveTo(x,y+centerRadius); g.lineTo(x+16,y+130); g.strokePath();
+      return;
+    }
+
+    // Stem
+    const sc = petalsLeft>=6 ? 0x388E3C : petalsLeft>=4 ? 0x8BC34A : 0xAFB42B;
+    g.lineStyle(8, sc, 1);
+    g.beginPath(); g.moveTo(x,y+centerRadius); g.lineTo(x,y+150); g.strokePath();
+
+    // Leaves
+    if (petalsLeft >= 4) {
+      g.fillStyle(0x66BB6A,1);
+      g.fillEllipse(x-36, y+90, 48, 18);
+      g.fillEllipse(x+36, y+112, 48, 18);
+    }
+
+    // All 8 petals
+    for (let i = 0; i < totalPetals; i++) {
+      const angle = (i/totalPetals)*Math.PI*2 - Math.PI/2;
+      const px = x + Math.cos(angle)*petalDist;
+      const py = y + Math.sin(angle)*petalDist;
+      if (i < petalsLeft) {
+        g.fillStyle(0xF48FB1,1); g.fillCircle(px,py,petalRadius);
+        g.fillStyle(0xFF80AB,1); g.fillCircle(px,py,petalRadius-3);
+        g.fillStyle(0xFFFFFF,0.25); g.fillCircle(px-4,py-4,5);
+      } else {
+        g.fillStyle(0xCFD8DC,0.3); g.fillCircle(px,py,petalRadius*0.4);
+      }
+    }
+
+    // Center
+    g.fillStyle(0xFFEE58,0.5); g.fillCircle(x,y,centerRadius+7);
+    g.fillStyle(0xFFD600,1);   g.fillCircle(x,y,centerRadius);
+    g.fillStyle(0xFFA000,1);   g.fillCircle(x,y,13);
+    g.fillStyle(0xFF6F00,1);   g.fillCircle(x,y,6);
+  }
+
+  createHTML() {
+    const old = document.getElementById('game-ui');
+    if (old) old.remove();
+    const ui = document.createElement('div');
+    ui.id = 'game-ui';
+    ui.style.cssText = `
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      z-index:20; font-family:'Nunito',sans-serif;
+      display:grid; grid-template-rows:auto auto 1fr auto auto auto auto;
+      align-items:center; pointer-events:none;`;
+
+    ui.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 28px 0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:15px;font-weight:800;color:#2E7D32;background:rgba(255,255,255,0.85);padding:5px 16px;border-radius:20px;">🌿 Grade ${this.grade}</span>
+          <button id="back-btn" style="background:rgba(255,255,255,0.85);border:2px solid #81C784;border-radius:20px;padding:5px 14px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:#388E3C;cursor:pointer;pointer-events:all;">🏠 Menu</button>
+        </div>
+        <span style="font-size:15px;font-weight:800;color:#C62828;background:rgba(255,255,255,0.85);padding:5px 16px;border-radius:20px;">❤️ <span id="lives-display">${this.maxWrong}</span> lives left</span>
+      </div>
+
+      <div style="margin:10px auto 0;background:rgba(255,255,255,0.92);border:2px solid #A5D6A7;border-radius:16px;padding:10px 28px;max-width:700px;width:88%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.07);">
+        <div style="font-size:11px;font-weight:800;color:#81C784;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">❓ Question</div>
+        <div style="font-size:15px;font-weight:700;color:#1B5E20;line-height:1.5;">${this.wordData.question}</div>
+      </div>
+
+      <div></div>
+
+      <div id="blanks-row" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:0 24px;margin:0 auto 6px;pointer-events:none;">
+        ${this.renderBlanks()}
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:6px;pointer-events:all;">
+        <button id="hint-btn" style="background:#FFFDE7;border:2px solid #F9A825;border-radius:12px;padding:7px 22px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:#F57F17;cursor:pointer;box-shadow:0 3px 0 rgba(249,168,37,0.4);">💡 Use Hint (costs 1 life)</button>
+        <div id="hint-text" style="font-size:12px;color:#E65100;font-style:italic;max-width:520px;text-align:center;min-height:14px;padding:0 20px;"></div>
+      </div>
+
+      <div style="text-align:center;font-size:12px;color:#757575;font-weight:600;margin-bottom:6px;pointer-events:none;">
+        Wrong letters: <span id="wrong-letters" style="color:#C62828;font-weight:800;letter-spacing:3px;"></span>
+      </div>
+
+      <div id="keyboard" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:14px;pointer-events:all;">
+        ${this.renderKeyboard()}
+      </div>`;
+
+    document.body.appendChild(ui);
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      if (this.gameOver) return;
+      this.gameOver = true;
+      document.getElementById('game-ui')?.remove();
+      document.getElementById('ui-layer').style.display = 'flex';
+      document.body.style.background = '#FFFACD';
+      this.cameras.main.fadeOut(400,0,0,0);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));
+    });
+
+    document.getElementById('hint-btn').addEventListener('click', () => this.useHint());
+    document.querySelectorAll('.key-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.handleGuess(btn.dataset.letter, btn));
+    });
+  }
+
+  renderBlanks() {
+    return this.word.split('').map(l => {
+      const shown = this.guessedLetters.includes(l);
+      return `<div style="display:flex;flex-direction:column;align-items:center;min-width:26px;">
+        <span style="font-size:26px;font-weight:800;color:#1B5E20;min-height:32px;display:block;line-height:32px;">${shown ? l : '&nbsp;'}</span>
+        <div style="width:26px;height:3px;background:#388E3C;border-radius:2px;"></div>
+      </div>`;
+    }).join('');
+  }
+
+  renderKeyboard() {
+    const rows = [
+      ['Q','W','E','R','T','Y','U','I','O','P'],
+      ['A','S','D','F','G','H','J','K','L'],
+      ['Z','X','C','V','B','N','M']
+    ];
+    return rows.map(row => `
+      <div style="display:flex;gap:4px;">
+        ${row.map(l => `<button class="key-btn" data-letter="${l}" style="width:42px;height:42px;border-radius:10px;border:2px solid #81C784;background:#C8E6C9;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#1B5E20;cursor:pointer;box-shadow:0 3px 0 #81C784;">${l}</button>`).join('')}
+      </div>`).join('');
+  }
+
+  updateBlanks() {
+    const el = document.getElementById('blanks-row');
+    if (el) el.innerHTML = this.renderBlanks();
+  }
+
+  updateLives() {
+    const el = document.getElementById('lives-display');
+    if (el) el.textContent = Math.max(0, this.maxWrong-this.wrongCount);
+  }
+
+  updateWrong() {
+    const el = document.getElementById('wrong-letters');
+    if (el) el.textContent = this.guessedLetters.filter(l => !this.word.includes(l)).join('  ');
+  }
+
+  shiftBackground(p) {
+    this.bgRect.setFillStyle(this.getPhaserBg(p));
+    document.body.style.transition = 'background 0.7s ease';
+    document.body.style.background = this.getBgHex(p);
+  }
+
+  handleGuess(letter, btnEl) {
+    if (this.gameOver || this.guessedLetters.includes(letter)) return;
+    this.guessedLetters.push(letter);
+    btnEl.disabled = true;
+    btnEl.style.cssText += 'background:#EEEEEE;border-color:#BDBDBD;color:#BDBDBD;cursor:default;box-shadow:none;';
+
+    if (this.word.includes(letter)) {
+      this.updateBlanks();
+      this.checkWin();
+    } else {
+      this.wrongCount++;
+      const r = this.maxWrong - this.wrongCount;
+      this.updateLives(); this.updateWrong();
+      this.shiftBackground(r);
+      this.drawFlower(this.flowerX, this.flowerY, r);
+      if (r <= 0) { this.gameOver = true; this.time.delayedCall(800, () => this.endGame(false)); }
+    }
+  }
+
+  useHint() {
+    if (this.hintUsed || this.gameOver || this.wrongCount >= this.maxWrong-1) return;
+    this.hintUsed = true;
+    const btn = document.getElementById('hint-btn');
+    if (btn) { btn.disabled=true; btn.style.opacity='0.5'; btn.style.cursor='default'; }
+    const el = document.getElementById('hint-text');
+    if (el) el.textContent = `💡 ${this.wordData.hint}`;
+    this.wrongCount++;
+    const r = this.maxWrong - this.wrongCount;
+    this.updateLives(); this.shiftBackground(r);
+    this.drawFlower(this.flowerX, this.flowerY, r);
+  }
+
+  checkWin() {
+    if (this.word.split('').every(l => this.guessedLetters.includes(l))) {
+      this.gameOver = true;
+      this.time.delayedCall(800, () => this.endGame(true));
+    }
+  }
+
+  endGame(won) {
+    document.getElementById('game-ui')?.remove();
+    this.cameras.main.fadeOut(500,0,0,0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('ResultScene', { won, word:this.word, grade:this.grade, funFact:this.wordData.hint, question:this.wordData.question });
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESULT SCENE
+// ═══════════════════════════════════════════════════════════════════════════
+class ResultScene extends Phaser.Scene {
+  constructor() { super('ResultScene'); }
+
+  init(data) {
+    this.won = data.won;
+    this.word = data.word || '';
+    this.grade = data.grade || 1;
+    this.funFact = data.funFact || '';
+    this.question = data.question || '';
+  }
+
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+    this.add.rectangle(W/2, H/2, W, H, this.won ? 0xF1F8E9 : 0xECEFF1);
+    const ac = this.won ? 0x81C784 : 0x90A4AE;
+    this.add.rectangle(W/2, 0, W, 10, ac).setOrigin(0.5,0);
+    this.add.rectangle(W/2, H, W, 10, ac).setOrigin(0.5,1);
+
+    this.flowerGfx = this.add.graphics();
+    this.flowerX = W/2; this.flowerY = H*0.32;
+
+    if (this.won) { this.drawFlowerBloomed(this.flowerX, this.flowerY); this.addConfetti(W,H); }
+    else          { this.drawFlowerDead(this.flowerX, this.flowerY); }
+
+    this.cameras.main.fadeIn(600);
+    this.createHTML();
+  }
+
+  drawFlowerBloomed(x, y) {
+    const g = this.flowerGfx; g.clear();
+    const totalPetals=8, centerRadius=24, petalRadius=22;
+    const petalDist = centerRadius+petalRadius;
+
+    g.lineStyle(9,0x388E3C,1);
+    g.beginPath(); g.moveTo(x,y+centerRadius); g.lineTo(x,y+160); g.strokePath();
+    g.fillStyle(0x66BB6A,1);
+    g.fillEllipse(x-40,y+95,52,20); g.fillEllipse(x+40,y+120,52,20);
+
+    for (let i=0;i<totalPetals;i++) {
+      const angle=(i/totalPetals)*Math.PI*2-Math.PI/2;
+      const px=x+Math.cos(angle)*petalDist, py=y+Math.sin(angle)*petalDist;
+      g.fillStyle(0xF48FB1,1); g.fillCircle(px,py,petalRadius);
+      g.fillStyle(0xFF80AB,1); g.fillCircle(px,py,petalRadius-4);
+      g.fillStyle(0xFFFFFF,0.3); g.fillCircle(px-5,py-5,6);
+    }
+
+    g.fillStyle(0xFFEE58,0.6); g.fillCircle(x,y,centerRadius+8);
+    g.fillStyle(0xFFD600,1);   g.fillCircle(x,y,centerRadius);
+    g.fillStyle(0xFFA000,1);   g.fillCircle(x,y,14);
+    g.fillStyle(0xFF6F00,1);   g.fillCircle(x,y,7);
+    this.addSparkles(x,y);
+  }
+
+  drawFlowerDead(x, y) {
+    const g = this.flowerGfx; g.clear();
+    g.lineStyle(8,0xBDBDBD,1);
+    g.beginPath(); g.moveTo(x,y+24); g.lineTo(x+18,y+90); g.lineTo(x+10,y+160); g.strokePath();
+    g.fillStyle(0xB0BEC5,0.6);
+    g.fillEllipse(x-10,y+145,44,14); g.fillEllipse(x+30,y+158,36,12);
+    const totalPetals=8, centerRadius=22, petalRadius=18;
+    for (let i=0;i<totalPetals;i++) {
+      const angle=(i/totalPetals)*Math.PI*2-Math.PI/2+0.3;
+      const dist=centerRadius+petalRadius*0.5;
+      const px=x+Math.cos(angle)*dist, py=y+Math.sin(angle)*dist+14;
+      g.fillStyle(0xCFD8DC,0.5); g.fillCircle(px,py,petalRadius*0.45);
+    }
+    g.fillStyle(0xBDBDBD,1); g.fillCircle(x,y,centerRadius);
+    g.fillStyle(0x90A4AE,1); g.fillCircle(x,y,13);
+    g.fillStyle(0x78909C,1); g.fillCircle(x,y,6);
+  }
+
+  drawStar(g,x,y,points,outerR,innerR,color) {
+    g.fillStyle(color,1); g.beginPath();
+    for (let i=0;i<points*2;i++) {
+      const r=i%2===0?outerR:innerR;
+      const angle=(i/(points*2))*Math.PI*2-Math.PI/2;
+      const px=x+Math.cos(angle)*r, py=y+Math.sin(angle)*r;
+      i===0?g.moveTo(px,py):g.lineTo(px,py);
+    }
+    g.closePath(); g.fillPath();
+  }
+
+  addSparkles(cx,cy) {
+    const sparkColors=[0xFFD600,0xFF80AB,0x81C784,0x64B5F6];
+    for (let i=0;i<6;i++) {
+      const angle=(i/6)*Math.PI*2;
+      const dist=80+Math.random()*40;
+      const sx=cx+Math.cos(angle)*dist, sy=cy+Math.sin(angle)*dist;
+      const spark=this.add.graphics();
+      this.drawStar(spark,sx,sy,4,8,3,sparkColors[i%sparkColors.length]);
+      this.tweens.add({ targets:spark, scaleX:1.8, scaleY:1.8, alpha:0,
+        duration:900+Math.random()*600, ease:'Sine.easeOut', repeat:-1, delay:i*180 });
+    }
+  }
+
+  addConfetti(W,H) {
+    const colors=[0xF48FB1,0xFFD600,0x81C784,0x64B5F6,0xFF8A65,0xCE93D8];
+    for (let i=0;i<38;i++) {
+      const x=Phaser.Math.Between(20,W-20);
+      const conf=this.add.graphics();
+      conf.fillStyle(Phaser.Math.RND.pick(colors),1);
+      const size=Phaser.Math.Between(5,10);
+      i%2===0 ? conf.fillCircle(x,-20,size/2) : conf.fillRect(x,-20,size,size*0.6);
+      this.tweens.add({ targets:conf, y:H+40, x:x+Phaser.Math.Between(-60,60),
+        angle:Phaser.Math.Between(-360,360), duration:Phaser.Math.Between(1800,3400),
+        delay:Phaser.Math.Between(0,1400), ease:'Sine.easeIn', repeat:1,
+        onStart:()=>{ conf.setPosition(0,0); }});
+    }
+  }
+
+  createHTML() {
+    document.getElementById('result-ui')?.remove();
+    const won=this.won;
+    const accentMain=won?'#2E7D32':'#455A64';
+    const accentLight=won?'#A5D6A7':'#B0BEC5';
+    const accentBg=won?'rgba(232,245,233,0.95)':'rgba(236,239,241,0.95)';
+    const statusEmoji=won?'🌸':'🥀';
+    const statusText=won?'You revived it!':'The flower wilted…';
+    const statusSub=won
+      ?'Amazing spelling! The flower is in full bloom!'
+      :`The word was: <strong style="color:#C62828;font-size:17px;letter-spacing:2px;">${this.word}</strong>`;
+
+    const ui=document.createElement('div');
+    ui.id='result-ui';
+    ui.style.cssText=`position:fixed;top:0;left:0;width:100%;height:100%;z-index:20;
+      font-family:'Nunito',sans-serif;display:flex;flex-direction:column;
+      align-items:center;justify-content:flex-end;padding-bottom:22px;pointer-events:none;`;
+
+    ui.innerHTML=`
+      <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);
+        background:${accentBg};border:2px solid ${accentLight};border-radius:20px;
+        padding:8px 28px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.08);">
+        <div style="font-size:22px;font-weight:800;color:${accentMain};">${statusEmoji} ${statusText}</div>
+        <div style="font-size:14px;color:${accentMain};margin-top:2px;font-weight:600;">${statusSub}</div>
+      </div>
+
+      <div style="background:${accentBg};border:2px solid ${accentLight};border-radius:18px;
+        padding:14px 24px;max-width:660px;width:88%;box-shadow:0 4px 16px rgba(0,0,0,0.09);
+        margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:800;color:${accentMain};text-transform:uppercase;
+          letter-spacing:2px;margin-bottom:6px;">🌿 Did You Know?</div>
+        <div style="font-size:14px;font-weight:700;color:${accentMain};line-height:1.55;">${this.funFact}</div>
+        ${this.question?`<div style="margin-top:8px;padding-top:8px;border-top:1.5px solid ${accentLight};
+          font-size:12px;color:${accentMain};font-style:italic;font-weight:600;">
+          ❓ The question was: ${this.question}</div>`:''}
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:all;">
+        <div style="background:${won?'#C8E6C9':'#CFD8DC'};border:2px solid ${accentLight};
+          border-radius:12px;padding:4px 18px;font-size:13px;font-weight:800;color:${accentMain};">
+          🌿 Grade ${this.grade}
+        </div>
+        <div style="display:flex;gap:14px;">
+          <button id="play-again-btn" style="background:${won?'#C8E6C9':'#CFD8DC'};
+            border:2.5px solid ${accentLight};border-radius:14px;padding:12px 30px;
+            font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;
+            color:${accentMain};cursor:pointer;box-shadow:0 4px 0 ${accentLight};">
+            🔄 Play Again
+          </button>
+          <button id="change-grade-btn" style="background:#FFF9C4;border:2.5px solid #F9A825;
+            border-radius:14px;padding:12px 30px;font-family:'Nunito',sans-serif;
+            font-size:15px;font-weight:800;color:#E65100;cursor:pointer;
+            box-shadow:0 4px 0 #F9A825;">
+            🎓 Change Grade
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(ui);
+
+    document.getElementById('play-again-btn').addEventListener('click', () => {
+      document.getElementById('result-ui')?.remove();
+      this.cameras.main.fadeOut(450,0,0,0);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('GameScene',{grade:this.grade}));
+    });
+
+    document.getElementById('change-grade-btn').addEventListener('click', () => {
+      document.getElementById('result-ui')?.remove();
+      document.getElementById('ui-layer').style.display='flex';
+      document.body.style.background='#FFFACD';
+      this.cameras.main.fadeOut(450,0,0,0);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));
+    });
+  }
+
+  shutdown() { document.getElementById('result-ui')?.remove(); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASER CONFIG
+// ═══════════════════════════════════════════════════════════════════════════
+new Phaser.Game({
+  type: Phaser.AUTO,
+  width: window.innerWidth,
+  height: window.innerHeight,
+  backgroundColor: '#FFFACD',
+  transparent: false,
+  scene: [MenuScene, GameScene, ResultScene],
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
+  render: {
+    pixelArt: false,
+    antialias: true,
+    resolution: window.devicePixelRatio || 1
+  },
+  parent: 'game-container'
+});
+</script>
+</body>
+</html>
