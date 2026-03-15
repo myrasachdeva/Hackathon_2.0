@@ -2,22 +2,39 @@
 <html>
 
 <head>
-
 <title>Cyber Dino Defender</title>
-
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
-
-<link rel="stylesheet" href="style.css">
-
+<style>
+    /* Reset default browser styles */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Prevents scrollbars */
+        background-color: black; /* Matches your game background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
+    
+    /* Ensure canvas fills the viewport properly */
+    canvas {
+        display: block;
+        max-width: 100%;
+        max-height: 100vh;
+        object-fit: contain;
+    }
+</style>
 </head>
 
 <body>
-
-<h2>Cyber Dino Defender 🦖</h2>
-<p>SPACE = Jump | DOWN ARROW = Duck</p>
-
 <script src="game.js"></script>
-
 </body>
 
 </html>
