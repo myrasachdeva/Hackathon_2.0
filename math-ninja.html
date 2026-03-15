@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Math Ninja 🥷</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; overflow: hidden;
+      font-family: 'Nunito', sans-serif;
+    }
+    canvas { border-radius: 16px; box-shadow: 0 0 60px rgba(255,180,0,0.2); }
+
+    /* ── Grade Select Overlay ── */
+    #grade-screen {
+      position: fixed; inset: 0;
+      background: linear-gradient(160deg, #0d0d2b 0%, #1a0a2e 50%, #0d1a2b 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 28px; z-index: 100;
+    }
+    #grade-screen h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 62px; color: #FFD700;
+      text-shadow: 0 0 30px rgba(255,215,0,0.6), 0 4px 0 #b8860b;
+      letter-spacing: 2px;
+    }
+    #grade-screen p {
+      font-size: 18px; color: #a0c4ff; font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .grade-row { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .grade-btn {
+      width: 110px; height: 110px; border-radius: 20px;
+      border: none; cursor: pointer;
+      font-family: 'Fredoka One', cursive;
+      font-size: 18px; color: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+      position: relative; overflow: hidden;
+    }
+    .grade-btn:hover { transform: translateY(-5px); box-shadow: 0 11px 0 rgba(0,0,0,0.4); }
+    .grade-btn:active { transform: translateY(1px); box-shadow: 0 3px 0 rgba(0,0,0,0.4); }
+    .grade-btn .grade-num { font-size: 36px; line-height: 1; }
+    .grade-btn .grade-lbl { font-size: 13px; opacity: 0.85; font-family: 'Nunito', sans-serif; font-weight: 700; }
+    .g1 { background: linear-gradient(135deg, #43e97b, #38f9d7); box-shadow: 0 6px 0 #1a8f5a; }
+    .g1:hover { box-shadow: 0 11px 0 #1a8f5a; }
+    .g2 { background: linear-gradient(135deg, #4facfe, #00f2fe); box-shadow: 0 6px 0 #1a6aaa; }
+    .g2:hover { box-shadow: 0 11px 0 #1a6aaa; }
+    .g3 { background: linear-gradient(135deg, #f093fb, #f5576c); box-shadow: 0 6px 0 #8b1a3a; }
+    .g3:hover { box-shadow: 0 11px 0 #8b1a3a; }
+    .g4 { background: linear-gradient(135deg, #fda085, #f6d365); box-shadow: 0 6px 0 #a05a1a; }
+    .g4:hover { box-shadow: 0 11px 0 #a05a1a; }
+    .g5 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); box-shadow: 0 6px 0 #5a1a8b; }
+    .g5:hover { box-shadow: 0 11px 0 #5a1a8b; }
+
+    .grade-desc {
+      font-size: 13px; color: #7090c0; font-weight: 600;
+      max-width: 460px; text-align: center; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Grade selection screen -->
+<div id="grade-screen">
+  <h1>🥷 Math Ninja</h1>
+  <p>Slice the fruits that solve the challenge!</p>
+  <div class="grade-row">
+    <button class="grade-btn g1" onclick="startGame(1)">
+      <span class="grade-num">1️⃣</span>
+      <span class="grade-lbl">Grade 1<br>Number Bonds</span>
+    </button>
+    <button class="grade-btn g2" onclick="startGame(2)">
+      <span class="grade-num">2️⃣</span>
+      <span class="grade-lbl">Grade 2<br>Add & Subtract</span>
+    </button>
+    <button class="grade-btn g3" onclick="startGame(3)">
+      <span class="grade-num">3️⃣</span>
+      <span class="grade-lbl">Grade 3<br>× & ÷</span>
+    </button>
+    <button class="grade-btn g4" onclick="startGame(4)">
+      <span class="grade-num">4️⃣</span>
+      <span class="grade-lbl">Grade 4<br>Multi-step</span>
+    </button>
+    <button class="grade-btn g5" onclick="startGame(5)">
+      <span class="grade-num">5️⃣</span>
+      <span class="grade-lbl">Grade 5<br>Fractions & %</span>
+    </button>
+  </div>
+  <div class="grade-desc">
+    Each round gives you a math challenge. Slice ONLY the fruits with numbers that solve it.<br>
+    Slice a wrong fruit and you lose a life! 🍉
+  </div>
+</div>
+
+<script>
+// ─── Grade question generators ──────────────────────────────────────────────
+const GRADE_CONFIG = {
+  1: {
+    label: 'Grade 1 · Number Bonds',
+    color: 0x43e97b,
+    generateQuestion() {
+      // Number bonds: missing number e.g. 3 + ? = 8, slice the ?
+      const total = Phaser.Math.Between(5, 15);
+      const known = Phaser.Math.Between(1, total - 1);
+      const answer = total - known;
+      const distractors = makeDistractors([answer], 1, 15, 6);
+      return {
+        prompt: `${known} + ? = ${total}   Slice the missing number!`,
+        target: answer,
+        correctValues: [answer],
+        distractors,
+        singleSlice: true,
+        checkFn: (c) => c.includes(answer),
+        overFn: () => false,
+      };
+    }
+  },
+  2: {
+    label: 'Grade 2 · Add & Subtract',
+    color: 0x4facfe,
+    generateQuestion() {
+      // Mix: two-digit addition/subtraction, slice the answer
+      const type = Phaser.Math.Between(0, 2);
+      let prompt, answer;
+      if (type === 0) {
+        // e.g. 34 + 27 = ?
+        const a = Phaser.Math.Between(11, 60), b = Phaser.Math.Between(11, 39);
+        answer = a + b;
+        prompt = `${a} + ${b} = ?`;
+      } else if (type === 1) {
+        // e.g. 72 − 38 = ?
+        const a = Phaser.Math.Between(30, 90), b = Phaser.Math.Between(10, a - 5);
+        answer = a - b;
+        prompt = `${a} − ${b} = ?`;
+      } else {
+        // Double: e.g. double 14 = ?
+        const a = Phaser.Math.Between(6, 25);
+        answer = a * 2;
+        prompt = `Double ${a} = ?`;
+      }
+      const distractors = makeDistractors([answer], Math.max(1, answer - 20), answer + 20, 6);
+      return {
+        prompt: `${prompt}   Slice the answer!`,
+        target: answer,
+        correctValues: [answer],
+        distractors,
+        singleSlice: true,
+        checkFn: (c) => c.includes(answer),
+        overFn: () => false,
+      };
+    }
+  },
+  3: {
+    label: 'Grade 3 · Multiply & Divide',
+    color: 0xf093fb,
+    generateQuestion() {
+      const type = Phaser.Math.Between(0, 2);
+      let prompt, answer;
+      if (type === 0) {
+        // Multiplication up to 12×12
+        const a = Phaser.Math.Between(3, 12), b = Phaser.Math.Between(3, 12);
+        answer = a * b;
+        prompt = `${a} × ${b} = ?`;
+      } else if (type === 1) {
+        // Division: exact
+        const b = Phaser.Math.Between(2, 10), answer_ = Phaser.Math.Between(2, 12);
+        const a = b * answer_;
+        answer = answer_;
+        prompt = `${a} ÷ ${b} = ?`;
+      } else {
+        // Missing factor: 6 × ? = 48
+        const a = Phaser.Math.Between(2, 12), b = Phaser.Math.Between(2, 12);
+        answer = b;
+        prompt = `${a} × ? = ${a * b}`;
+      }
+      const distractors = makeDistractors([answer], 1, 144, 6);
+      return {
+        prompt: `${prompt}   Slice the answer!`,
+        target: answer,
+        correctValues: [answer],
+        distractors,
+        singleSlice: true,
+        checkFn: (c) => c.includes(answer),
+        overFn: () => false,
+      };
+    }
+  },
+  4: {
+    label: 'Grade 4 · Multi-step & Remainders',
+    color: 0xfda085,
+    generateQuestion() {
+      const type = Phaser.Math.Between(0, 3);
+      let prompt, answer;
+      if (type === 0) {
+        // Multi-step: (a × b) + c
+        const a = Phaser.Math.Between(3, 12), b = Phaser.Math.Between(3, 9), c = Phaser.Math.Between(1, 20);
+        answer = a * b + c;
+        prompt = `(${a} × ${b}) + ${c} = ?`;
+      } else if (type === 1) {
+        // Division with remainder
+        const divisor = Phaser.Math.Between(3, 9);
+        const quotient = Phaser.Math.Between(5, 15);
+        const remainder = Phaser.Math.Between(1, divisor - 1);
+        const dividend = divisor * quotient + remainder;
+        answer = remainder;
+        prompt = `${dividend} ÷ ${divisor}  — what's the remainder?`;
+      } else if (type === 2) {
+        // Large multiplication
+        const a = Phaser.Math.Between(12, 25), b = Phaser.Math.Between(4, 9);
+        answer = a * b;
+        prompt = `${a} × ${b} = ?`;
+      } else {
+        // Negative result awareness: what must you add to X to reach Y?
+        const start = Phaser.Math.Between(20, 70), end = Phaser.Math.Between(start + 5, start + 50);
+        answer = end - start;
+        prompt = `${start} + ? = ${end}`;
+      }
+      const lo = Math.max(1, answer - 30), hi = answer + 30;
+      const distractors = makeDistractors([answer], lo, hi, 6);
+      return {
+        prompt: `${prompt}   Slice the answer!`,
+        target: answer,
+        correctValues: [answer],
+        distractors,
+        singleSlice: true,
+        checkFn: (c) => c.includes(answer),
+        overFn: () => false,
+      };
+    }
+  },
+  5: {
+    label: 'Grade 5 · Fractions & Percentages',
+    color: 0xa18cd1,
+    generateQuestion() {
+      const type = Phaser.Math.Between(0, 3);
+      let prompt, ansStr, distractorStrs;
+
+      const simplify = (n, d) => { const g = gcd(Math.abs(n), Math.abs(d)); return `${n/g}/${d/g}`; };
+
+      if (type === 0) {
+        // Mixed denominator fraction add: a/b + c/d
+        const b = Phaser.Math.Between(2, 6), d = Phaser.Math.Between(2, 6);
+        const n1 = Phaser.Math.Between(1, b), n2 = Phaser.Math.Between(1, d);
+        const lcd = lcm(b, d);
+        const ansNum = n1 * (lcd/b) + n2 * (lcd/d);
+        ansStr = simplify(ansNum, lcd);
+        prompt = `${n1}/${b} + ${n2}/${d} = ?`;
+        distractorStrs = [];
+        for (let i = 0; i < 6; i++) {
+          const rn = Phaser.Math.Between(1, lcd * 2 - 1);
+          distractorStrs.push(simplify(rn, lcd));
+        }
+      } else if (type === 1) {
+        // Fraction subtraction
+        const d = Phaser.Math.Between(3, 8);
+        const n1 = Phaser.Math.Between(3, d * 2), n2 = Phaser.Math.Between(1, n1 - 1);
+        const ansNum = n1 - n2;
+        ansStr = simplify(ansNum, d);
+        prompt = `${n1}/${d} − ${n2}/${d} = ?`;
+        distractorStrs = [];
+        for (let i = 0; i < 6; i++) {
+          const rn = Phaser.Math.Between(1, d * 2 - 1);
+          distractorStrs.push(simplify(rn, d));
+        }
+      } else if (type === 2) {
+        // Percentage of a number: e.g. 25% of 80 = ?
+        const pcts = [10, 20, 25, 50, 75];
+        const pct = pcts[Phaser.Math.Between(0, pcts.length - 1)];
+        const num = Phaser.Math.Between(2, 20) * 4;
+        const ans = Math.round(pct / 100 * num);
+        ansStr = String(ans);
+        prompt = `${pct}% of ${num} = ?`;
+        distractorStrs = makeDistractors([ans], Math.max(1, ans - 20), ans + 20, 6).map(String);
+      } else {
+        // Fraction × whole: e.g. 3/4 × 20 = ?
+        const d = Phaser.Math.Between(2, 5);
+        const n = Phaser.Math.Between(1, d - 1);
+        const whole = d * Phaser.Math.Between(2, 8);
+        const ans = (n / d) * whole;
+        ansStr = String(ans);
+        prompt = `${n}/${d} × ${whole} = ?`;
+        distractorStrs = makeDistractors([ans], Math.max(1, ans - 15), ans + 15, 6).map(String);
+      }
+
+      const uniqueDistractors = [...new Set(distractorStrs)].filter(f => f !== ansStr).slice(0, 6);
+      return {
+        prompt: `${prompt}   Slice the answer!`,
+        target: ansStr,
+        correctValues: [ansStr],
+        distractors: uniqueDistractors,
+        singleSlice: true,
+        isFraction: true,
+        checkFn: (c) => c.includes(ansStr),
+        overFn: () => false,
+      };
+    }
+  }
+};
+
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+function splitInto(total, count, min, max) {
+  if (count === 1) return [total];
+  const parts = [];
+  let remaining = total;
+  for (let i = 0; i < count - 1; i++) {
+    const maxPart = Math.min(max, remaining - (count - i - 1) * min);
+    const part = Phaser.Math.Between(min, maxPart);
+    parts.push(part);
+    remaining -= part;
+  }
+  parts.push(remaining);
+  return parts;
+}
+
+function makeDistractors(correct, min, max, count) {
+  const set = new Set(correct.map(String));
+  const out = [];
+  let tries = 0;
+  while (out.length < count && tries < 200) {
+    tries++;
+    const v = Phaser.Math.Between(min, max);
+    if (!set.has(String(v))) { set.add(String(v)); out.push(v); }
+  }
+  return out;
+}
+
+// ─── Game state ──────────────────────────────────────────────────────────────
+let selectedGrade = 1;
+function startGame(grade) {
+  selectedGrade = grade;
+  document.getElementById('grade-screen').style.display = 'none';
+  window._mathNinjaGrade = grade;
+  window._mathNinjaStart = true;
+}
+
+// ─── Phaser Scene ────────────────────────────────────────────────────────────
+class MathNinja extends Phaser.Scene {
+  constructor() { super('MathNinja'); }
+
+  preload() {
+    // Generate pixel texture for particles
+    const pg = this.make.graphics({ x: 0, y: 0, add: false });
+    pg.fillStyle(0xffffff);
+    pg.fillRect(0, 0, 8, 8);
+    pg.generateTexture('pixel', 8, 8);
+  }
+
+  create() {
+    const W = this.scale.width, H = this.scale.height;
+
+    // Wait for grade selection
+    this.gradeReady = false;
+    this.time.addEvent({
+      delay: 100, loop: true,
+      callback: () => {
+        if (window._mathNinjaStart) {
+          window._mathNinjaStart = false;
+          this.grade = window._mathNinjaGrade || 1;
+          this.initGame();
+        }
+      }
+    });
+  }
+
+  initGame() {
+    const W = this.scale.width, H = this.scale.height;
+    this.gradeReady = true;
+    this.lives = 3;
+    this.score = 0;
+    this.collected = [];   // values sliced this round
+    this.fruits = this.physics.add.group();
+    this.isGameOver = false;
+    this.roundActive = false;
+    this.sliceTrail = [];
+
+    // ── Background ──
+    this.bg = this.add.graphics();
+    this.drawBg(W, H);
+
+    // ── Dojo pillars decoration ──
+    this.drawDojo(W, H);
+
+    // ── Stars / particles BG ──
+    this.bgStars = this.add.graphics();
+    this.drawStars(W, H);
+
+    // ── UI ──
+    this.blade = this.add.graphics();
+
+    // Score panel
+    this.scoreBg = this.add.graphics();
+    this.drawPanel(this.scoreBg, 10, 10, 140, 50, 0x000000, 0.5);
+    this.scoreText = this.add.text(80, 35, '0', {
+      fontFamily: 'Fredoka One', fontSize: '30px', color: '#FFD700'
+    }).setOrigin(0.5);
+    this.add.text(80, 18, '⭐ SCORE', {
+      fontFamily: 'Nunito', fontSize: '11px', color: '#aaaacc', fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // Lives
+    this.livesBg = this.add.graphics();
+    this.drawPanel(this.livesBg, W - 150, 10, 140, 50, 0x000000, 0.5);
+    this.livesText = this.add.text(W - 80, 35, '❤️❤️❤️', {
+      fontFamily: 'Nunito', fontSize: '22px'
+    }).setOrigin(0.5);
+    this.add.text(W - 80, 18, 'LIVES', {
+      fontFamily: 'Nunito', fontSize: '11px', color: '#aaaacc', fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // Question banner
+    this.qBg = this.add.graphics();
+    this.drawPanel(this.qBg, W/2 - 280, 8, 560, 56, 0x1a0a3e, 0.85, 0xFFD700);
+    this.questionText = this.add.text(W/2, 36, '', {
+      fontFamily: 'Fredoka One', fontSize: '22px', color: '#FFD700',
+      stroke: '#000', strokeThickness: 3
+    }).setOrigin(0.5);
+
+    // Progress bar (how close to answer)
+    this.progressBg = this.add.graphics();
+    this.progressBar = this.add.graphics();
+    this.drawPanel(this.progressBg, W/2 - 160, 70, 320, 22, 0x000000, 0.4);
+    this.progressLabel = this.add.text(W/2, 81, '', {
+      fontFamily: 'Nunito', fontSize: '12px', color: '#aaffaa', fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // Grade badge
+    const cfg = GRADE_CONFIG[this.grade];
+    this.add.text(16, H - 24, cfg.label, {
+      fontFamily: 'Nunito', fontSize: '13px', color: '#8080aa', fontStyle: 'bold'
+    }).setOrigin(0, 1);
+
+    // Back button
+    const backBtn = this.add.text(W - 16, H - 24, '🔄 Change Grade', {
+      fontFamily: 'Nunito', fontSize: '13px', color: '#8080aa', fontStyle: 'bold'
+    }).setOrigin(1, 1).setInteractive({ useHandCursor: true });
+    backBtn.on('pointerover', () => backBtn.setColor('#FFD700'));
+    backBtn.on('pointerout', () => backBtn.setColor('#8080aa'));
+    backBtn.on('pointerdown', () => this.returnToMenu());
+
+    // Input
+    this.input.on('pointerdown', this.startSlice, this);
+    this.input.on('pointermove', this.doSlice, this);
+    this.input.on('pointerup', this.stopSlice, this);
+
+    // Game over overlay (hidden)
+    this.overOverlay = this.add.graphics().setDepth(50);
+    this.overTitle = this.add.text(W/2, H/2 - 60, '', {
+      fontFamily: 'Fredoka One', fontSize: '52px', color: '#FF4444',
+      stroke: '#000', strokeThickness: 5
+    }).setOrigin(0.5).setDepth(51).setVisible(false);
+    this.overSub = this.add.text(W/2, H/2 + 10, '', {
+      fontFamily: 'Nunito', fontSize: '22px', color: '#ffffff',
+      align: 'center', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(51).setVisible(false);
+    this.overBtn = this.add.text(W/2, H/2 + 80, '▶️  Play Again', {
+      fontFamily: 'Fredoka One', fontSize: '28px', color: '#FFD700',
+      backgroundColor: '#1a0a3e', padding: { x: 20, y: 10 },
+      stroke: '#FFD700', strokeThickness: 1
+    }).setOrigin(0.5).setDepth(52).setVisible(false).setInteractive({ useHandCursor: true });
+    this.overBtn.on('pointerdown', () => this.restartGame());
+
+    this.spawnTimer = this.time.addEvent({
+      delay: 600, callback: this.spawnFruit, callbackScope: this, loop: true
+    });
+
+    this.startRound();
+  }
+
+  drawBg(W, H) {
+    const g = this.bg;
+    g.fillGradientStyle(0x0d0d2b, 0x0d0d2b, 0x1a0a2e, 0x0d1a2b, 1);
+    g.fillRect(0, 0, W, H);
+    // Moon
+    g.fillStyle(0xFFFDE7, 0.12);
+    g.fillCircle(W * 0.82, H * 0.18, 70);
+    g.fillStyle(0xFFFDE7, 0.06);
+    g.fillCircle(W * 0.82, H * 0.18, 95);
+  }
+
+  drawDojo(W, H) {
+    const g = this.add.graphics();
+    // Left pillar
+    g.fillStyle(0x1a0a2e, 0.9);
+    g.fillRect(0, H * 0.3, 30, H * 0.7);
+    g.lineStyle(2, 0x4a2a7e, 0.6);
+    g.strokeRect(0, H * 0.3, 30, H * 0.7);
+    // Right pillar
+    g.fillRect(W - 30, H * 0.3, 30, H * 0.7);
+    g.strokeRect(W - 30, H * 0.3, 30, H * 0.7);
+    // Ground line
+    g.lineStyle(3, 0x4a2a7e, 0.5);
+    g.beginPath();
+    g.moveTo(0, H - 60); g.lineTo(W, H - 60);
+    g.strokePath();
+    // Subtle dojo pattern lines
+    g.lineStyle(1, 0x2a1a5e, 0.3);
+    for (let i = 0; i < 6; i++) {
+      const x = W * (i + 1) / 7;
+      g.beginPath(); g.moveTo(x, H * 0.4); g.lineTo(x, H); g.strokePath();
+    }
+  }
+
+  drawStars(W, H) {
+    const g = this.bgStars;
+    for (let i = 0; i < 60; i++) {
+      const x = Math.random() * W;
+      const y = Math.random() * H * 0.7;
+      const r = Math.random() * 1.5 + 0.5;
+      g.fillStyle(0xffffff, Math.random() * 0.5 + 0.1);
+      g.fillCircle(x, y, r);
+    }
+  }
+
+  drawPanel(g, x, y, w, h, color, alpha, strokeColor) {
+    g.clear();
+    g.fillStyle(color, alpha);
+    g.fillRoundedRect(x, y, w, h, 12);
+    if (strokeColor) {
+      g.lineStyle(2, strokeColor, 0.7);
+      g.strokeRoundedRect(x, y, w, h, 12);
+    }
+  }
+
+  startRound() {
+    const cfg = GRADE_CONFIG[this.grade];
+    this.currentQ = cfg.generateQuestion();
+    this.collected = [];
+    this.roundActive = true;
+    this.questionText.setText(this.currentQ.prompt);
+    this.updateProgressBar();
+
+    // Clear leftover fruits
+    this.fruits.getChildren().forEach(f => f.destroy());
+
+    // Pre-spawn immediately so screen isn't empty
+    for (let i = 0; i < 4; i++) {
+      this.time.delayedCall(i * 150, () => { if (this.roundActive) this.spawnFruit(); });
+    }
+  }
+
+  updateProgressBar() {
+    const W = this.scale.width;
+    this.progressBar.clear();
+
+    if (this.currentQ.singleSlice || this.currentQ.isFraction) {
+      this.progressLabel.setText('Slice the correct answer fruit!');
+      return;
+    }
+
+    const target = this.currentQ.target;
+    const current = this.collected.reduce((a, b) => a + b, 0);
+    const remaining = target - current;
+    const pct = Math.min(current / target, 1);
+
+    this.progressBar.fillStyle(0x00ff88, 0.8);
+    this.progressBar.fillRoundedRect(W/2 - 158, 72, 316 * pct, 18, 6);
+    this.progressLabel.setText(`${current} / ${target}  —  need ${remaining} more`);
+  }
+
+  spawnFruit() {
+    if (this.isGameOver || !this.roundActive || !this.currentQ) return;
+    const W = this.scale.width;
+    const q = this.currentQ;
+
+    let value;
+    if (q.freeAdd) {
+      // Spawn a mix of numbers: some that fit (1..remaining), some that don't
+      const currentSum = this.collected.reduce((a,b)=>a+b,0);
+      const remaining = q.target - currentSum;
+      const spawnOver = Math.random() < 0.4; // 40% chance of a number that would overshoot
+      if (spawnOver || remaining <= 1) {
+        // Distractor: a value larger than remaining (or just a random big number)
+        value = Phaser.Math.Between(remaining + 1, Math.max(remaining + 1, q.target));
+        if (value > q.target) value = Phaser.Math.Between(Math.ceil(q.target * 0.6), q.target);
+      } else {
+        value = Phaser.Math.Between(1, remaining);
+      }
+    } else {
+      const isCorrect = Math.random() < 0.45;
+      if (isCorrect && q.correctValues.length > 0) {
+        value = q.correctValues[Phaser.Math.Between(0, q.correctValues.length - 1)];
+      } else {
+        const d = q.distractors;
+        value = d[Phaser.Math.Between(0, d.length - 1)];
+      }
+    }
+
+    const startX = Phaser.Math.Between(80, W - 80);
+    const container = this.add.container(startX, this.scale.height + 40);
+    container.setSize(70, 70);
+
+    // For freeAdd: colour reflects whether slicing it would be safe right now
+    // (re-evaluated at slice time for accuracy — this is just visual hint)
+    let isCorrect;
+    if (q.freeAdd) {
+      const currentSum = this.collected.reduce((a,b)=>a+b,0);
+      isCorrect = (currentSum + value) <= q.target;
+    } else {
+      isCorrect = q.correctValues.map(String).includes(String(value));
+    }
+
+    const palette = isCorrect
+      ? [0x00e676, 0x69f0ae, 0x00c853]
+      : [0xff5252, 0xff8a80, 0xf44336, 0xff9800, 0xffc107, 0x7c4dff, 0x40c4ff];
+
+    const color = palette[Phaser.Math.Between(0, palette.length - 1)];
+
+    if (isCorrect) {
+      const glow = this.add.graphics();
+      glow.fillStyle(0x00ff88, 0.15);
+      glow.fillCircle(0, 0, 42);
+      container.add(glow);
+    }
+
+    const circle = this.add.graphics();
+    circle.fillStyle(color, 1);
+    circle.fillCircle(0, 0, 33);
+    circle.fillStyle(0xffffff, 0.15);
+    circle.fillCircle(-8, -8, 14);
+    circle.lineStyle(3, 0xffffff, 0.3);
+    circle.strokeCircle(0, 0, 33);
+
+    const label = this.add.text(0, 2, String(value), {
+      fontFamily: 'Fredoka One', fontSize: '22px', color: '#ffffff',
+      stroke: '#000', strokeThickness: 3
+    }).setOrigin(0.5);
+
+    container.add([circle, label]);
+    container.fruitValue = value;
+    container.fruitColor = color;
+    container.isCorrect = isCorrect; // hint only — re-checked at slice time
+
+    this.physics.world.enable(container);
+    this.fruits.add(container);
+
+    container.body.setVelocity(
+      Phaser.Math.Between(-80, 80),
+      Phaser.Math.Between(-700, -950)
+    );
+    container.body.setGravityY(850);
+
+    this.tweens.add({
+      targets: container,
+      angle: Phaser.Math.Between(-200, 200),
+      duration: Phaser.Math.Between(1500, 2500),
+      ease: 'Linear', repeat: -1
+    });
+  }
+
+  startSlice(pointer) {
+    if (this.isGameOver) return;
+    this.sliceTrail = [new Phaser.Math.Vector2(pointer.x, pointer.y)];
+  }
+
+  doSlice(pointer) {
+    if (!pointer.isDown || this.isGameOver) return;
+    this.sliceTrail.push(new Phaser.Math.Vector2(pointer.x, pointer.y));
+    if (this.sliceTrail.length > 10) this.sliceTrail.shift();
+
+    this.blade.clear();
+    this.blade.lineStyle(5, 0xffffff, 0.9);
+    this.blade.beginPath();
+    this.blade.moveTo(this.sliceTrail[0].x, this.sliceTrail[0].y);
+    for (let i = 1; i < this.sliceTrail.length; i++) {
+      this.blade.lineTo(this.sliceTrail[i].x, this.sliceTrail[i].y);
+    }
+    this.blade.strokePath();
+
+    // Glow trail
+    if (this.sliceTrail.length > 3) {
+      this.blade.lineStyle(12, 0xffd700, 0.12);
+      this.blade.beginPath();
+      this.blade.moveTo(this.sliceTrail[0].x, this.sliceTrail[0].y);
+      for (let i = 1; i < this.sliceTrail.length; i++) {
+        this.blade.lineTo(this.sliceTrail[i].x, this.sliceTrail[i].y);
+      }
+      this.blade.strokePath();
+    }
+
+    const fruits = this.fruits.getChildren();
+    for (const fruit of fruits) {
+      if (!fruit.active) continue;
+      const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, fruit.x, fruit.y);
+      if (dist < 38) this.sliceFruit(fruit);
+    }
+  }
+
+  stopSlice() {
+    this.sliceTrail = [];
+    this.blade.clear();
+  }
+
+  sliceFruit(fruit) {
+    if (!fruit.active) return;
+    const val = fruit.fruitValue;
+    const color = fruit.fruitColor;
+    const x = fruit.x, y = fruit.y;
+    const q = this.currentQ;
+
+    // For freeAdd: a fruit is correct if slicing it doesn't overshoot
+    let isCorrect;
+    if (q.freeAdd) {
+      const currentSum = this.collected.reduce((a,b)=>a+b,0);
+      isCorrect = (currentSum + val) <= q.target;
+    } else {
+      isCorrect = fruit.isCorrect;
+    }
+
+    // Particle burst
+    const emitter = this.add.particles(x, y, 'pixel', {
+      speed: { min: 120, max: 350 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 1.2, end: 0 },
+      tint: color,
+      lifespan: 600,
+      gravityY: 500,
+      blendMode: 'ADD',
+    });
+    emitter.explode(isCorrect ? 25 : 15);
+
+    // Half-fruit halves (two smaller circles flying apart)
+    this.spawnHalves(x, y, color);
+
+    fruit.destroy();
+
+    if (isCorrect) {
+      this.collected.push(val);
+      this.score += 10;
+      this.scoreText.setText(String(this.score));
+      this.cameras.main.shake(80, 0.007);
+      this.updateProgressBar();
+      this.showFeedback(x, y, '+' + val, '#00ff88');
+
+      if (q.checkFn(this.collected)) {
+        this.score += 50;
+        this.scoreText.setText(String(this.score));
+        this.cameras.main.flash(250, 0, 255, 120);
+        this.showBanner('✅ Correct! +50 bonus', '#00ff88');
+        this.time.delayedCall(900, () => this.startRound());
+      }
+    } else {
+      // For freeAdd: slicing a fruit that would overshoot loses a life
+      if (q.freeAdd) {
+        this.showFeedback(x, y, 'Too big! ✗', '#ff4444');
+      } else {
+        this.showFeedback(x, y, '✗ Wrong!', '#ff4444');
+      }
+      this.loseLife();
+      this.cameras.main.shake(200, 0.02);
+      this.cameras.main.flash(300, 255, 50, 50);
+    }
+  }
+
+  spawnHalves(x, y, color) {
+    for (let side of [-1, 1]) {
+      const half = this.add.graphics();
+      half.fillStyle(color, 0.8);
+      half.fillCircle(0, 0, 18);
+      half.x = x; half.y = y;
+      this.tweens.add({
+        targets: half,
+        x: x + side * Phaser.Math.Between(40, 90),
+        y: y + Phaser.Math.Between(60, 130),
+        alpha: 0,
+        scaleX: 0.3, scaleY: 0.3,
+        duration: 600,
+        ease: 'Quad.easeIn',
+        onComplete: () => half.destroy()
+      });
+    }
+  }
+
+  showFeedback(x, y, msg, color) {
+    const txt = this.add.text(x, y - 20, msg, {
+      fontFamily: 'Fredoka One', fontSize: '26px', color,
+      stroke: '#000', strokeThickness: 4
+    }).setOrigin(0.5).setDepth(30);
+    this.tweens.add({
+      targets: txt, y: y - 80, alpha: 0,
+      duration: 900, ease: 'Quad.easeOut',
+      onComplete: () => txt.destroy()
+    });
+  }
+
+  showBanner(msg, color) {
+    const W = this.scale.width, H = this.scale.height;
+    const txt = this.add.text(W/2, H/2, msg, {
+      fontFamily: 'Fredoka One', fontSize: '40px', color,
+      stroke: '#000', strokeThickness: 6
+    }).setOrigin(0.5).setDepth(40).setAlpha(0);
+    this.tweens.add({
+      targets: txt, alpha: 1, scaleX: 1.1, scaleY: 1.1,
+      duration: 200, yoyo: true, hold: 400,
+      onComplete: () => { this.tweens.add({ targets: txt, alpha: 0, duration: 300, onComplete: () => txt.destroy() }); }
+    });
+  }
+
+  loseLife() {
+    this.lives--;
+    const hearts = ['', '❤️', '❤️❤️', '❤️❤️❤️'];
+    this.livesText.setText(this.lives > 0 ? hearts[this.lives] : '💀');
+    if (this.lives <= 0) {
+      this.time.delayedCall(400, () => this.triggerGameOver());
+    }
+  }
+
+  triggerGameOver() {
+    this.isGameOver = true;
+    this.roundActive = false;
+    this.spawnTimer.remove();
+    this.fruits.getChildren().forEach(f => f.destroy());
+    this.blade.clear();
+
+    const W = this.scale.width, H = this.scale.height;
+    this.overOverlay.fillStyle(0x000000, 0.75);
+    this.overOverlay.fillRoundedRect(W/2 - 240, H/2 - 110, 480, 220, 20);
+    this.overOverlay.lineStyle(2, 0xFF4444, 0.8);
+    this.overOverlay.strokeRoundedRect(W/2 - 240, H/2 - 110, 480, 220, 20);
+
+    this.overTitle.setText('GAME OVER').setVisible(true);
+    this.overSub.setText(`Final Score: ${this.score}\nTap to play again!`).setVisible(true);
+    this.overBtn.setVisible(true);
+
+    this.cameras.main.flash(600, 255, 50, 50);
+  }
+
+  restartGame() {
+    this.overOverlay.clear();
+    this.overTitle.setVisible(false);
+    this.overSub.setVisible(false);
+    this.overBtn.setVisible(false);
+    this.lives = 3;
+    this.score = 0;
+    this.scoreText.setText('0');
+    this.livesText.setText('❤️❤️❤️');
+    this.isGameOver = false;
+    this.collected = [];
+    this.spawnTimer = this.time.addEvent({
+      delay: 600, callback: this.spawnFruit, callbackScope: this, loop: true
+    });
+    this.startRound();
+  }
+
+  returnToMenu() {
+    this.fruits.getChildren().forEach(f => f.destroy());
+    this.blade.clear();
+    if (this.spawnTimer) this.spawnTimer.remove();
+    document.getElementById('grade-screen').style.display = 'flex';
+    // Reset scene
+    this.scene.restart();
+    this.gradeReady = false;
+  }
+
+  update() {
+    if (!this.gradeReady) return;
+    const H = this.scale.height;
+    this.fruits.getChildren().forEach(f => {
+      if (f.y > H + 60) f.destroy();
+    });
+  }
+}
+
+const config = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: '#0d0d2b',
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 0 }, debug: false }
+  },
+  scene: MathNinja
+};
+
+new Phaser.Game(config);
+</script>
+</body>
+</html>
