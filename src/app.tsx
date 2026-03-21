@@ -675,7 +675,7 @@ export default function App() {
                           desc={"Arithmetic-Action Challenge\n\nSector: Alpha-1\nSkill: Rapid Calculation"}
                           img="/images/Math-ninja.jpeg"
                           difficulty="HARD"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/math-ninja.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Math-ninja.game/')}
                         />
                         <GameCard 
                           title="Flappy Bird" 
@@ -716,14 +716,14 @@ export default function App() {
                           desc={"Arithmetic-Action Challenge\n\nSector: Alpha-1\nSkill: Rapid Calculation"}
                           img="/images/Math-ninja.jpeg"
                           difficulty="HARD"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/math-ninja.html')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Math-ninja.game/')}
                         />
                         <GameCard 
                           title="Cyber Run" 
                           desc={"Logic-Platformer Challenge\n\nSector: Delta-4\nSkill: Algorithm Logic"}
                           img="/images/cyber-run.png"
                           difficulty="MEDIUM"
-                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/Hackathon_2.0/games/cyber dino/')}
+                          onPlay={() => setActiveGameUrl('https://myrasachdeva.github.io/cyber-run.game/')}
                         />
                       </>
                     )}
